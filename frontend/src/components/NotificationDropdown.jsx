@@ -1,17 +1,18 @@
 // NotificationDropdown.jsx
 import React, { useEffect, useState } from 'react';
-import { Bell, Check, CheckCheck, X } from 'lucide-react';
+import { Bell, Check, CheckCheck, X, User, LogIn } from 'lucide-react';
 import { useNotifications } from './NotificationContext';
 import NotificationItem from './NotificationItem';
 
-const NotificationDropdown = ({ onClose }) => {
+const NotificationDropdown = ({ onClose, isAuthenticated }) => {
   const { notifications, unreadCount, loading, fetchNotifications, markAllAsRead } = useNotifications();
   const [filter, setFilter] = useState('all'); // 'all', 'unread'
 
   useEffect(() => {
     const filterParams = filter === 'unread' ? { is_read: false } : {};
     fetchNotifications(1, filterParams);
-  }, [fetchNotifications, filter]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [filter]);
 
   const handleMarkAllRead = async () => {
     await markAllAsRead();
@@ -30,13 +31,31 @@ const NotificationDropdown = ({ onClose }) => {
             </span>
           )}
         </div>
-        <button
-          onClick={onClose}
-          className="p-1 hover:bg-gray-100 rounded"
-        >
-          <X size={16} />
-        </button>
+        <div className="flex items-center space-x-2">
+          {!isAuthenticated && (
+            <div className="flex items-center text-xs text-gray-500">
+              <User size={12} className="mr-1" />
+              <span>Guest</span>
+            </div>
+          )}
+          <button
+            onClick={onClose}
+            className="p-1 hover:bg-gray-100 rounded"
+          >
+            <X size={16} />
+          </button>
+        </div>
       </div>
+
+      {/* Authentication Notice for Guests */}
+      {!isAuthenticated && (
+        <div className="bg-blue-50 border-b border-blue-200 p-3">
+          <div className="flex items-center space-x-2 text-sm text-blue-700">
+            <LogIn size={16} />
+            <span>Login to sync notifications across devices</span>
+          </div>
+        </div>
+      )}
 
       {/* Filter tabs */}
       <div className="flex border-b">
@@ -85,6 +104,9 @@ const NotificationDropdown = ({ onClose }) => {
           <div className="p-4 text-center text-gray-500">
             <Bell size={32} className="mx-auto mb-2 opacity-50" />
             <p>No notifications</p>
+            {!isAuthenticated && (
+              <p className="text-xs mt-1">Guest notifications are temporary</p>
+            )}
           </div>
         ) : (
           <div className="divide-y">
@@ -92,6 +114,7 @@ const NotificationDropdown = ({ onClose }) => {
               <NotificationItem
                 key={notification.id}
                 notification={notification}
+                isGuest={!isAuthenticated}
               />
             ))}
           </div>
@@ -104,7 +127,7 @@ const NotificationDropdown = ({ onClose }) => {
           onClick={() => {
             onClose();
             // Navigate to notifications page
-            window.location.href = '/notifications';
+            window.location.href = isAuthenticated ? '/notifications' : '/guest-notifications';
           }}
           className="w-full text-sm text-blue-600 hover:text-blue-800"
         >

@@ -12,7 +12,7 @@ import {
 } from 'lucide-react';
 import { useNotifications } from './NotificationContext';
 
-const NotificationItem = ({ notification }) => {
+const NotificationItem = ({ notification, isGuest = false }) => {
   const { markAsRead } = useNotifications();
 
   const getNotificationIcon = (type) => {
@@ -59,27 +59,36 @@ const NotificationItem = ({ notification }) => {
       markAsRead(notification.id);
     }
     
-    // Handle navigation based on notification type
-    const { type, metadata } = notification;
-    switch (type) {
-      case 'booking_success':
-      case 'booking_rejected':
-        if (metadata.booking_id) {
-          window.location.href = `/bookings/${metadata.booking_id}`;
+    // Handle navigation based on notification type and authentication status
+    if (!isGuest) {
+      const { type, metadata } = notification;
+      switch (type) {
+        case 'booking_success':
+        case 'booking_rejected':
+          if (metadata.booking_id) {
+            window.location.href = `/bookings/${metadata.booking_id}`;
+          }
+          break;
+        case 'complaint_replied':
+          if (metadata.complaint_id) {
+            window.location.href = `/complaints/${metadata.complaint_id}`;
+          }
+          break;
+        case 'event_completed':
+          if (metadata.booking_id) {
+            window.location.href = `/feedback/${metadata.booking_id}`;
+          }
+          break;
+        default:
+          break;
+      }
+    } else {
+      // For guest users, show a login prompt for actions that require authentication
+      if (['booking_success', 'complaint_replied', 'event_completed'].includes(notification.type)) {
+        if (confirm('Please login to view full details. Would you like to go to the login page?')) {
+          window.location.href = '/login';
         }
-        break;
-      case 'complaint_replied':
-        if (metadata.complaint_id) {
-          window.location.href = `/complaints/${metadata.complaint_id}`;
-        }
-        break;
-      case 'event_completed':
-        if (metadata.booking_id) {
-          window.location.href = `/feedback/${metadata.booking_id}`;
-        }
-        break;
-      default:
-        break;
+      }
     }
   };
 
@@ -88,10 +97,17 @@ const NotificationItem = ({ notification }) => {
   return (
     <div
       onClick={handleClick}
-      className={`p-3 hover:bg-gray-50 cursor-pointer transition-colors ${
+      className={`p-3 hover:bg-gray-50 cursor-pointer transition-colors relative ${
         !notification.is_read ? 'bg-blue-50 border-l-4 border-l-blue-500' : ''
       }`}
     >
+      {/* Guest indicator */}
+      {isGuest && (
+        <div className="absolute top-2 right-2">
+          <div className="w-2 h-2 bg-orange-400 rounded-full" title="Guest notification"></div>
+        </div>
+      )}
+      
       <div className="flex items-start space-x-3">
         <div className={`flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center ${bgColor}`}>
           {icon}
@@ -116,11 +132,18 @@ const NotificationItem = ({ notification }) => {
               {formatTimeAgo(notification.created_at)}
             </span>
             
-            {notification.metadata.booking_id && (
-              <span className="text-xs bg-gray-100 text-gray-600 px-2 py-1 rounded">
-                #{notification.metadata.booking_id}
-              </span>
-            )}
+            <div className="flex items-center space-x-2">
+              {notification.metadata?.booking_id && (
+                <span className="text-xs bg-gray-100 text-gray-600 px-2 py-1 rounded">
+                  #{notification.metadata.booking_id}
+                </span>
+              )}
+              {isGuest && (
+                <span className="text-xs bg-orange-100 text-orange-600 px-2 py-1 rounded">
+                  Guest
+                </span>
+              )}
+            </div>
           </div>
         </div>
       </div>

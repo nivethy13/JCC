@@ -4,6 +4,8 @@ from django.contrib.auth.models import User
 from functools import wraps
 
 from django.urls import path
+from django.views import View
+from backend.notifications.views import NotificationService
 import jwt
 from django.conf import settings
 import json
